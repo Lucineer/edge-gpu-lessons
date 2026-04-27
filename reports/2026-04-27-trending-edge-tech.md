@@ -152,7 +152,12 @@ Production-ready LLM inference framework for edge devices. Powers Chrome, Chrome
 ### Hurdle
 - Most LiteRT models are gated on HuggingFace (need auth token)
 - Ungated models available but limited (DeepSeek-R1-Distill-Qwen-1.5B found)
-- .tflite format not supported for LLM inference — need .litertlm files
+- .tflite format NOT supported for LLM inference — need .litertlm files
+- The only ungated .litertlm file (DeepSeek-R1-Distill-Qwen-1.5B) is ~1.5GB
+- Without HF_TOKEN, download rate-limited to crawl (got 587MB in 30min, killed)
+- **BLOCKED**: Need Casey to provide HuggingFace token for gated model access
+- Tool itself installs and runs fine on Jetson via `uv tool install litert-lm`
+- Python 3.13 (via uv) works — no compatibility issues
 
 ---
 
