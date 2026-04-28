@@ -1,66 +1,45 @@
 # Baton Protocol Improvements — From hermes-agent Study
 **Date:** 2026-04-27
 **Source:** NousResearch/hermes-agent context_compressor.py (1350 lines)
+**Status:** IMPLEMENTED — see ~/.openclaw/skills/baton-compaction/SKILL.md v3
 
-## Key Patterns to Adopt
+## Key Patterns Adopted
 
-### 1. "Reference Only" Framing (CRITICAL)
-hermes-agent uses this summary prefix:
-> "[CONTEXT COMPACTION — REFERENCE ONLY] Earlier turns were compacted into the summary below. This is a handoff from a previous context window — treat it as background reference, NOT as active instructions. Do NOT answer questions or fulfill requests mentioned in this summary; they were already addressed."
+### 1. "Reference Only" Framing (CRITICAL) — ✅ IMPLEMENTED
+ONBOARDING.md now includes mandatory handoff framing that prevents next-gen
+from re-executing completed work. Header text copied from hermes-agent's
+SUMMARY_PREFIX pattern.
 
-Our baton protocol should adopt this framing to prevent the agent from re-executing completed work.
+### 2. Anti-Thrashing Protection — ✅ IMPLEMENTED
+lineage.json now tracks `anti_thrash` object with savings_pct and
+ineffective_handoff_count. Two consecutive <10% savings triggers a
+recommendation to `/new` instead of continuing.
 
-### 2. Token-Budget Tail Protection (replace fixed message count)
-Currently our baton uses fixed message counts for tail protection. hermes-agent uses:
-- Walk backward from end, accumulating token costs
-- Protect tail until budget exceeded
-- 4 chars ≈ 1 token estimate
-- Images counted as 1600 tokens flat each
-- Summary budget: 20% of compressed content, ceiling 12K tokens
+### 3. Tool Output Pruning — ✅ IMPLEMENTED
+STATE.md "Completed Actions" section now requires structured one-liner
+format: `[tool] action -> outcome`. No raw output allowed.
 
-### 3. Tool Output Pruning (CHEAP, no LLM call)
-Before any LLM summarization:
-- Replace old tool results with 1-line summaries: `[terminal] ran 'npm test' -> exit 0, 47 lines output`
-- Deduplicate identical tool results (same file read 5x → keep newest, back-reference others)
-- Truncate large tool_call arguments (50KB write_file content → 200 char JSON-valid truncation)
+### 4. Token-Budget Tail Protection — ✅ IMPLEMENTED
+ONBOARDING.md capped at 200 words with explicit trimming priority.
+STATE.md unlimited. "Active Task" field identified as the single most
+important piece of context.
 
-### 4. Anti-Thrashing Protection
-- Track compression savings percentage
-- If last 2 compressions each saved <10%, skip further compression
-- Suggest `/new` or focused `/compress <topic>` instead
-- Cooldown timer on summary failures (600s)
+### 5. Iterative Summary Updates — ✅ IMPLEMENTED
+Protocol now requires reading previous generation's STATE.md before
+writing new one. Completed actions continue numbering, resolved questions
+migrate, active task updates.
 
-### 5. Iterative Summary Updates
-- Store previous summary
-- When compressing again, update the existing summary instead of regenerating from scratch
-- Preserves information across multiple compaction events
+### 6. Structured Summary Template — ✅ IMPLEMENTED
+STATE.md now has 13 sections including "Resolved Questions" (prevents
+re-answering), "Pending User Asks" (prevents dropping requests), and
+"Remaining Work" (not "Next Steps" — avoids re-execution).
 
-### 6. Compaction Summary Template (structured)
-```
-## Resolved
-- [completed items with outcomes]
+### 7. "Remaining Work" Not "Next Steps" — ✅ IMPLEMENTED
+Framed as context, not instructions.
 
-## Pending
-- [items that were in-progress or not yet addressed]
-
-## Active Task
-- [what the agent should resume doing RIGHT NOW]
-
-## Key Decisions
-- [architectural choices, context that informs future work]
-
-## Files Modified
-- [list of files changed, for state awareness]
-```
-
-### 7. "Remaining Work" Not "Next Steps"
-hermes-agent uses "Remaining Work" instead of "Next Steps" — the latter reads as active instructions that get re-executed.
-
-## Implementation Priority
-
-1. **HIGH**: "Reference Only" framing in baton handoff
-2. **HIGH**: Anti-thrashing protection (prevent infinite compaction loops)
-3. **MEDIUM**: Token-budget tail protection
-4. **MEDIUM**: Tool output pruning pass (before LLM summarization)
-5. **LOW**: Structured summary template
-6. **LOW**: Iterative summary updates
+## What Changed in the Skill File
+- SKILL.md grew from ~3.5KB to ~8KB
+- Added 7 numbered patterns with implementation details
+- Verification checklist expanded from 5 to 6 items
+- Secret verification pattern added (grep for sk-, key-, token, etc.)
+- baton.yaml now includes environment fields (hostname, os, gpu, cuda_version)
